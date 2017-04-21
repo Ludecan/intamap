@@ -67,6 +67,14 @@ spatialPredict.automap = function(object, nsim = 0, ...) {
   maxdist = params$maxdist
   if (is.null(maxdist)) maxdist = Inf
   
+  # PA@2017_04_21 Adding params nmin, omax and beta to the krige call
+  # Default value for beta is null so we don't check it for being null
+  nmin = params$nmin
+  if (is.null(nmin)) nmin = 0
+  omax = params$omax
+  if (is.null(omax)) omax = 0
+  beta = params$beta
+  
     if (! "variogramModel" %in% names(object)) object = estimateParameters(object,...)
     
     nPred = nrow(coordinates(object$predictionLocations))
@@ -94,7 +102,7 @@ spatialPredict.automap = function(object, nsim = 0, ...) {
       i = 1 # To avoid R CMD check complain about missing i
       pred <- foreach(i = 1:nclus, .combine = rbind) %dopar% {
         gstat::krige(formulaString, observations, 
-           newdlst[[i]], variogramModel, nsim=nsim, nmax = nmax, maxdist = maxdist, debug.level = debug.level)
+           newdlst[[i]], variogramModel, nsim=nsim, beta = beta, nmax = nmax, nmin = nmin, omax = omax, maxdist = maxdist, debug.level = debug.level)
       }
 #      pred = do.call("rbind", parLapply(cl, newdlst, function(lst) 
 #          krige(formulaString,observations, 
@@ -102,11 +110,11 @@ spatialPredict.automap = function(object, nsim = 0, ...) {
       stopCluster(cl)
     } else {  
       pred = krige(object$formulaString, object$observations, 
-           object$predictionLocations, object$variogramModel, nsim=nsim, nmax = nmax,
+           object$predictionLocations, object$variogramModel, nsim=nsim, beta = beta, nmax = nmax, nmin = nmin, omax = omax, 
            maxdist = maxdist, debug.level = debug.level)
       if (nsim >0) {
         pred2 = krige(object$formulaString,object$observations, 
-           object$predictionLocations, object$variogramModel, nmax = nmax, maxdist = maxdist, 
+           object$predictionLocations, object$variogramModel, beta = beta, nmax = nmax, nmin = nmin, omax = omax, maxdist = maxdist, 
            debug.level = debug.level)
         pred@data = cbind(pred2@data, pred@data)
       }
@@ -144,7 +152,7 @@ spatialPredict.yamamoto = function(object, nsim = 0, ...) {
   	object$variogramModel = afv$var_model
 	object$sampleVariogram = afv$exp_var
   }
-                     
+  
   predictions = yamamotoKrige(formulaString,object$observations, 
             object$predictionLocations,object$variogramModel, nsim=nsim, nmax = nmax, maxdist = maxdist, ...)
   object$predictions = predictions

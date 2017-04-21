@@ -18,6 +18,14 @@ spatialPredict.block = function(object,...) {
   nmax = params$nmax
   maxdist = params$maxdist
   if (is.null(maxdist)) maxdist = Inf
+  # PA@2017_04_21 Adding params nmin, omax and beta to the krige call
+  # Default value for beta is null so we don't check it for being null
+  nmin = params$nmin
+  if (is.null(nmin)) nmin = 0
+  omax = params$omax
+  if (is.null(omax)) omax = 0
+  beta = params$beta
+  
   observations = object$observations
   formul = object$formulaString
   predictionLocations = object$predictionLocations
@@ -47,7 +55,7 @@ spatialPredict.block = function(object,...) {
 # We have to be sure that the variogram is also found from the logarithmised data
     if (params$processType == "logNormal") observations[[depVar]] = log(observations[[depVar]])
       predictions = krige(object$formulaString, observations, predictionLocations,
-                          object$variogramModel, block = block, nmax = nmax, maxdist = maxdist)
+                          object$variogramModel, block = block, beta = beta, nmax = nmax, nmin = nmin, omax = omax, maxdist = maxdist)
     if (params$processType == "logNormal") {
       predictions$var1.pred = exp(predictions$var1.pred + predictions$var1.var/2) 
       warning("Note that the back-calculated lognormal predictor is only approximate, as the Lagrange parameter is not included")
